@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Monolibrary</title>
+    <title>Register - Monolibrary</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -13,7 +13,7 @@
             background-color: #fff;
         }
 
-        .login-section {
+        .register-section {
             min-height: 100vh;
         }
 
@@ -62,7 +62,7 @@
             border-color: #0d6efd;
         }
 
-        .btn-login {
+        .btn-register {
             padding: 12px;
             font-weight: 600;
             border-radius: 8px;
@@ -70,7 +70,7 @@
 
         /* Sisi Kanan: Gambar Background */
         .image-section {
-            background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+            background-image: url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -95,7 +95,7 @@
 <body>
 
     <div class="container-fluid">
-        <div class="row login-section">
+        <div class="row register-section">
             
             <div class="col-lg-5 col-md-6 form-wrapper bg-white order-2 order-md-1">
                 
@@ -109,10 +109,15 @@
                 </div>
 
                 <div class="w-100" style="max-width: 400px; margin: 0 auto;">
-                    <h2 class="form-title">Welcome back</h2>
-                    <p class="form-subtitle">Please enter your details to sign in.</p>
+                    <h2 class="form-title">Create an account</h2>
+                    <p class="form-subtitle">Please fill in your details to sign up.</p>
 
-                    <form id="loginForm">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-bold small">Full Name</label>
+                            <input type="text" class="form-control" id="name" placeholder="Enter your full name" required>
+                        </div>
+
                         <div class="mb-3">
                             <label for="email" class="form-label fw-bold small">Email address</label>
                             <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
@@ -120,25 +125,29 @@
 
                         <div class="mb-3">
                             <label for="password" class="form-label fw-bold small">Password</label>
-                            <input type="password" class="form-control" id="password" placeholder="••••••••" required>
+                            <input type="password" class="form-control" id="password" placeholder="••••••••" required minlength="6">
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label fw-bold small">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" placeholder="••••••••" required minlength="6">
+                        </div>
+
+                        <div class="mb-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="rememberMe">
-                                <label class="form-check-label small text-secondary" for="rememberMe">
-                                    Remember me
+                                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                                <label class="form-check-label small text-secondary" for="agreeTerms">
+                                    I agree to the <a href="#" class="text-primary text-decoration-none">Terms & Conditions</a>
                                 </label>
                             </div>
-                            <a href="#" class="small text-decoration-none fw-bold text-primary">Forgot password?</a>
                         </div>
 
                         <div class="d-grid mb-4">
-                            <button type="submit" class="btn btn-primary btn-login shadow-sm">Sign In</button>
+                            <button type="submit" class="btn btn-primary btn-register shadow-sm">Create Account</button>
                         </div>
 
                         <div class="text-center">
-                            <p class="small text-muted">Don't have an account? <a href="register.html" class="fw-bold text-primary text-decoration-none">Sign up</a></p>
+                            <p class="small text-muted">Already have an account? <a href="login.html" class="fw-bold text-primary text-decoration-none">Sign in</a></p>
                         </div>
                     </form>
                 </div>
@@ -152,8 +161,8 @@
             <div class="col-lg-7 col-md-6 d-none d-md-block image-section order-1 order-md-2 p-0">
                 <div class="image-overlay">
                     <div class="overlay-text">
-                        <h3>"A room without books is like a body without a soul."</h3>
-                        <p class="mb-0">— Marcus Tullius Cicero</p>
+                        <h3>"The more that you read, the more things you will know."</h3>
+                        <p class="mb-0">— Dr. Seuss</p>
                     </div>
                 </div>
             </div>
@@ -163,46 +172,47 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validate password match
+            if (password !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
 
             try {
-                const response = await fetch('/api/users/login', {
+                const response = await fetch('/api/users/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ 
+                        name, 
+                        email, 
+                        password,
+                        role: 'Anggota' // Default role
+                    })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Save token and user info
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    alert('Login successful!');
-                    
-                    // Redirect based on role
-                    if (data.user.role === 'Admin') {
-                        window.location.href = 'admin-dashboard.html';
-                    } else {
-                        window.location.href = 'index.html';
-                    }
+                    alert('Registration successful! Please login.');
+                    window.location.href = 'login.html';
                 } else {
-                    alert(data.message || 'Login failed');
+                    alert(data.error || 'Registration failed');
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                alert('Error during login. Please try again.');
+                console.error('Registration error:', error);
+                alert('Error during registration. Please try again.');
             }
         });
     </script>
 </body>
 </html>
-
-
