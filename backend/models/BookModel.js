@@ -4,6 +4,10 @@ exports.getAllBooks = () => {
   return db.promise().query("SELECT * FROM books");
 };
 
+exports.getBookById = (id) => {
+  return db.promise().query("SELECT * FROM books WHERE id = ?", [id]);
+};
+
 exports.createBook = (data) => {
   return db.promise().query("INSERT INTO books SET ?", data);
 };

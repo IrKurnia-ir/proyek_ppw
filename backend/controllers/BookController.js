@@ -9,6 +9,21 @@ exports.getBooks = async (req, res) => {
   }
 };
 
+exports.getBookById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await BookModel.getBookById(id);
+    
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    
+    res.json(result[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.createBook = async (req, res) => {
   try {
     const { title, author, year, description } = req.body;
