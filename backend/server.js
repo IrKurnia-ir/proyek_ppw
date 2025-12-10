@@ -8,6 +8,8 @@ const bookRoutes = require('./routes/bookRoutes');
 const userRoutes = require('./routes/userRoutes');
 const LoanRoutes = require('./routes/LoanRoutes');
 
+const announcementRoutes = require('./routes/announcementRoutes');
+
 const app = express();
 
 // Configure CORS properly
@@ -38,6 +40,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/books', bookRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/loans', LoanRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 // Test routes
 app.get('/api/healthcheck', (req, res) => {

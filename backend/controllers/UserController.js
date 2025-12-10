@@ -5,39 +5,16 @@ const UserModel = require('../models/UserModel');
 
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ message: "All fields are required" });
 
-        // Input validation
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: "Name, email, and password are required" });
-        }
-
-        if (password.length < 6) {
-            return res.status(400).json({ error: "Password must be at least 6 characters long" });
-        }
-
-        // Email format validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ error: "Invalid email format" });
-        }
-
-        // Check if user already exists
-        const [existingUsers] = await UserModel.findByEmail(email);
-        if (existingUsers.length > 0) {
-            return res.status(400).json({ error: "User with this email already exists" });
-        }
-
-        // Validasi role, default ke 'Anggota' jika tidak disediakan
-        const userRole = role && ['Admin', 'Anggota'].includes(role) ? role : 'Anggota';
+        const [existingUser] = await UserModel.findByEmail(email);
+        if (existingUser.length > 0) return res.status(400).json({ message: "Email already exists" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        await UserModel.createUser({ name, email, password: hashedPassword, role: userRole });
-
-        res.json({ message: "User registered successfully!", role: userRole });
+        await UserModel.createUser(name, email, hashedPassword);
+        res.status(201).json({ message: "User registered successfully" });
     } catch (error) {
-        console.error('Registration error:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -45,52 +22,42 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const [users] = await UserModel.findByEmail(email);
-
-        if (users.length === 0) {
-            return res.status(400).json({ message: "User not found" });
-        }
+        if (users.length === 0) return res.status(404).json({ message: "User not found" });
 
         const user = users[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-        const validPassword = await bcrypt.compare(password, user.password);
-
-        if (!validPassword) {
-            return res.status(400).json({ message: "Invalid password" });
-        }
-
-        const token = jwt.sign({ 
-            id: user.id, 
-            email: user.email, 
-            role: user.role 
-        }, process.env.JWT_SECRET || "secretkey", {
-            expiresIn: "1d"
-        });
-
-        res.json({ 
-            message: "Login success", 
+        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        
+        res.json({
+            message: "Login successful",
             token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
+exports.getProfile = async (req, res) => {
+    try {
+        const [users] = await db.promise().query("SELECT id, name, email, role, created_at FROM users WHERE id = ?", [req.user.id]);
+        if (users.length === 0) return res.status(404).json({ message: "User not found" });
+        res.json({ user: users[0] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// --- FITUR BARU UNTUK ADMIN (UC-09) ---
+
 exports.getDashboardStats = async (req, res) => {
     try {
-        // Hitung Total User (Hanya role Anggota)
-        const [users] = await db.promise().query("SELECT COUNT(*) as count FROM users WHERE role = 'Anggota'");
-        
-        // Hitung User Baru Minggu Ini
+        const [users] = await db.promise().query("SELECT COUNT(*) as count FROM users");
         const [newUsers] = await db.promise().query("SELECT COUNT(*) as count FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
-
+        // Hitung yang statusnya 'borrowed' (sedang dipinjam aktif)
         const [active] = await db.promise().query("SELECT COUNT(DISTINCT user_id) as count FROM loans WHERE status = 'borrowed'");
 
         res.json({
@@ -99,28 +66,36 @@ exports.getDashboardStats = async (req, res) => {
             activeReaders: active[0] ? active[0].count : 0
         });
     } catch (error) {
-        console.error("Error getting stats:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
-exports.getProfile = async (req, res) => {
+exports.getAllUsers = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const [users] = await UserModel.findById(userId);
-
-        if (users.length === 0) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        const user = users[0];
-        delete user.password; // Jangan kirim password ke client
-
-        res.json({ user });
+        const [users] = await db.promise().query("SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC");
+        res.json(users);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.promise().query("DELETE FROM users WHERE id = ?", [id]);
+        res.json({ message: "User deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
-
+exports.updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, email } = req.body;
+        await db.promise().query("UPDATE users SET name = ?, email = ? WHERE id = ?", [name, email, userId]);
+        res.json({ message: "Profile updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

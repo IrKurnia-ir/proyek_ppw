@@ -415,8 +415,38 @@
             document.getElementById('editEmail').value = user.email;
         }
 
-        function saveProfile() {
-            alert('Profile update functionality will be implemented with backend support');
+        async function saveProfile() {
+            const name = document.getElementById('editName').value;
+            const email = document.getElementById('editEmail').value;
+            const token = localStorage.getItem('token');
+
+            try {
+                const response = await fetch('http://localhost:3000/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, email })
+                });
+
+                if (response.ok) {
+                    alert('Profile updated successfully!');
+                    
+                    // Tutup modal manual (Bootstrap vanilla)
+                    const modalEl = document.getElementById('editProfileModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+
+                    // Reload halaman atau load ulang data
+                    loadProfile();
+                } else {
+                    alert('Failed to update profile');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error updating profile');
+            }
         }
 
         function logout() {

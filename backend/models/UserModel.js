@@ -1,28 +1,19 @@
 const db = require('../config/db');
 
 const UserModel = {
+    // 1. Cari user berdasarkan email (Aman dari error syntax)
     findByEmail: (email) => {
         return db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
     },
 
-    findById: (id) => {
-        return db.promise().query("SELECT * FROM users WHERE id = ?", [id]);
-    },
-
-    createUser: (data) => {
-        return db.promise().query("INSERT INTO users SET ?", data);
-    },
-
-    updateUser: (data, id) => {
-        return db.promise().query("UPDATE users SET ? WHERE id = ?", [data, id]);
+    // 2. Buat user baru
+    createUser: (name, email, password) => {
+        // Role default selalu 'Anggota' saat register
+        return db.promise().query(
+            "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'Anggota')",
+            [name, email, password]
+        );
     }
 };
 
-exports.getUserByEmail = (email) => {
-    return db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
-}
-
 module.exports = UserModel;
-
-
-
